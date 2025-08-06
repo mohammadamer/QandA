@@ -1,5 +1,16 @@
 import React from 'react';
 import user from './user.svg';
+
+/** @jsxImportSource @emotion/react */
+import { css } from '@emotion/react';
+
 export const UserIcon = () => (
-    <img src={user} alt="User" width="12px" />
+    <img
+        src={user}
+        alt="User"
+        css={css`
+        width: 12px;
+        opacity: 0.6;
+        `}
+        />
 );
