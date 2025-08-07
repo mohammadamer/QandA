@@ -4,48 +4,48 @@ import { getUnansweredQuestions, QuestionData } from '../QuestionsData';
 import { Page } from '../PageTitle/Page';
 import { PageTitle } from '../PageTitle/PageTitle';
 
+/** @jsxImportSource @emotion/react */
+import { css } from '@emotion/react';
+import { PrimaryButton } from '../Styles';
+
 export const HomePage = () => {
-    const [
-        questions,
-        setQuestions,
-    ] = React.useState<QuestionData[]>([]);
+  const [questions, setQuestions] = React.useState<QuestionData[]>([]);
+  const [questionsLoading, setQuestionsLoading] = React.useState(true);
 
-    const [
-        questionsLoading,
-        setQuestionsLoading,
-    ] = React.useState(true);
-
-    React.useEffect(() => {
-        console.log('first rendered');
-        const doGetUnansweredQuestions = async () => {
-            const unansweredQuestions = await getUnansweredQuestions();
-            setQuestions(unansweredQuestions);
-            setQuestionsLoading(false);
-        };
-        doGetUnansweredQuestions();
-    }, []);
-    
-    const handleAskQuestionClick = () => {
-        console.log('TODO - move to the AskPage');
+  React.useEffect(() => {
+    const doGetUnansweredQuestions = async () => {
+      const unansweredQuestions = await getUnansweredQuestions();
+      setQuestions(unansweredQuestions);
+      setQuestionsLoading(false);
     };
+    doGetUnansweredQuestions();
+  }, []);
+  const handleAskQuestionClick = () => {
+    console.log('TODO - move to the AskPage');
+  };
 
-    console.log('rendered');
-    return (
-        <Page>
-            <div>
-                <PageTitle>Unanswered Questions</PageTitle>
-                <button onClick={handleAskQuestionClick}>Ask a question</button>
-
-                {questionsLoading ? (
-                    <div>Loading…</div>
-                ) : (
-                    <QuestionList data={questions || []} />
-                )}
-                {/* renderItem={(question) => <div> {question.title} </div>} */}
-            </div>
-        </Page>
-    );
-}
+  return (
+    <Page>
+      <div
+        css={css`
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+        `}
+      >
+        <PageTitle>Unanswered Questions</PageTitle>
+        <PrimaryButton onClick={handleAskQuestionClick}>
+          Ask a question
+        </PrimaryButton>
+      </div>
+      {questionsLoading ? (
+        <div>Loading...</div>
+      ) : (
+        <QuestionList data={questions} />
+      )}
+    </Page>
+  );
+};
 
 // Important Note
 // The pattern of implementing a function prop to allow consumers to render an
