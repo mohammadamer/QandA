@@ -81,6 +81,23 @@ const wait = (ms: number): Promise<void> => {
     return new Promise(resolve => setTimeout(resolve, ms));
 };
 
+
+export const getQuestion = async (questionId: number): Promise<QuestionData | null> => {
+    await wait(500);
+    const results = questions.filter(q => q.questionId === questionId);
+    return results.length === 0 ? null : results[0];
+};
+
+
+export const searchQuestions = async (criteria: string): Promise<QuestionData[]> => {
+    await wait(500);
+    return questions.filter(
+        q =>
+            q.title.toLowerCase().indexOf(criteria.toLowerCase()) >= 0 ||
+            q.content.toLowerCase().indexOf(criteria.toLowerCase()) >= 0,
+    );
+};
+
 // Important Note
 // An interface is a type that defines the structure for an object, including all its
 // properties and methods. Interfaces don't exist in JavaScript, so they are purely
@@ -131,3 +148,10 @@ const wait = (ms: number): Promise<void> => {
 // Important Note
 // The void type is another TypeScript-specific type that is used to represent a
 // non-returning function. So, void in TypeScript is like void in .NET.
+
+
+// Important note
+// A union type is a mechanism for defining a type that contains values from
+// multiple types. If we think of a type as a set of values, then the union of
+// multiple types is the same as the union of the sets of values. More information
+// is available at https://www.typescriptlang.org/docs/handbook/unions-and-intersections.html#uniontypes

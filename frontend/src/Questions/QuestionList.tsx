@@ -1,6 +1,6 @@
 import React, { JSX } from 'react';
 import { QuestionData } from '../QuestionsData';
-import { Question } from '../Question/Question';
+import { Question } from './Question';
 
 /** @jsxImportSource @emotion/react */
 import { css } from '@emotion/react';
@@ -12,33 +12,10 @@ interface Props {
 }
 
 export const QuestionList = ({ data, renderItem }: Props) => (
-    <ul
-        css={css`
-        list-style: none;
-        margin: 10px 0 0 0;
-        padding: 0px 20px;
-        background-color: #fff;
-        border-bottom-left-radius: 4px;
-        border-bottom-right-radius: 4px;
-        border-top: 3px solid ${accent2};
-        box-shadow: 0 3px 5px 0 rgba(0, 0, 0, 0.16);
-        `}
-        >
+    <ul css={css` list-style: none; margin: 10px 0 0 0; padding: 0px 20px; background-color: #fff; border-bottom-left-radius: 4px; border-bottom-right-radius: 4px; border-top: 3px solid ${accent2}; box-shadow: 0 3px 5px 0 rgba(0, 0, 0, 0.16);`}>
         {data.map((question) => (
-            // <li key={question.questionId} >
-            //     <Question data={question} />
-            // </li>
-
-            <li key={question.questionId} 
-            css={css`
-            border-top: 1px solid ${gray5};
-            :first-of-type {
-            border-top: none;
-            }
-            `}
-            >
-                {renderItem ? renderItem(question) : <Question
-                    data={question} />}
+            <li key={question.questionId} css={css` border-top: 1px solid ${gray5}; :first-of-type {border-top: none;}`}>
+                {renderItem ? renderItem(question) : <Question data={question} />}
             </li>
         ))}
     </ul>
@@ -49,7 +26,7 @@ export const QuestionList = ({ data, renderItem }: Props) => (
 // iterates through the items in the array, invoking the function that's passed
 // into it for each array item. The function is expected to return an item that will
 // form a new array. In summary, it is a way of mapping an array to a new array.
-// More information can be found at 
+// More information can be found at
 // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/map
 
 // Important Note
@@ -62,7 +39,7 @@ export const QuestionList = ({ data, renderItem }: Props) => (
 
 // Important Note
 // Destructuring is a special syntax that allows us to unpack objects or arrays
-// into variables. More information on destructuring can be found at 
+// into variables. More information on destructuring can be found at
 // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/Destructuring_assignment
 
 // Important Note
