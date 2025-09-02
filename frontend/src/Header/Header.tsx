@@ -4,7 +4,8 @@ import { UserIcon } from '../Icons/Icons';
 /** @jsxImportSource @emotion/react */
 import { css } from '@emotion/react';
 import { fontFamily, fontSize, gray1, gray2, gray5 } from '../Styles'
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams, useNavigate } from 'react-router-dom';
+import { useForm } from 'react-hook-form';
 
 // Important Note
 // An *arrow function* is an alternative function syntax that was introduced in
@@ -21,11 +22,18 @@ import { Link } from 'react-router-dom';
 //             <span>Sign In</span></a>
 //     </div>
 // );
+type FormData = {
+    search: string;
+};
 
 export const Header = () => {
+    const navigate = useNavigate();
+    const { register, handleSubmit } = useForm<FormData>();
+    const [searchParams] = useSearchParams();
+    const criteria = searchParams.get('criteria') || '';
 
-    const handleSearchInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        console.log(e.currentTarget.value);
+    const submitForm = ({ search }: FormData) => {
+        navigate(`search?criteria=${search}`);
     };
 
     return (
@@ -34,16 +42,21 @@ export const Header = () => {
                 Q & A
             </Link>
 
-            <input
-                type="text"
-                placeholder="Search..."
-                onChange={handleSearchInputChange}
-                css={css` box-sizing: border-box; font-family: ${fontFamily}; font-size: ${fontSize}; padding: 8px 10px; border: 1px solid ${gray5}; border-radius: 3px; color: ${gray2}; background-color: white; width: 200px; height: 30px; :focus {outline-color: ${gray5};}`} />
+            <form onSubmit={handleSubmit(submitForm)}>
+                <input
+                    {...register('search')}
+                    name="search"
+                    type="text"
+                    placeholder="Search..."
+                    defaultValue={criteria}
+                    css={css` box-sizing: border-box; font-family: ${fontFamily}; font-size: ${fontSize}; padding: 8px 10px; border: 1px solid ${gray5}; border-radius: 3px; color: ${gray2}; background-color: white; width: 200px; height: 30px; :focus {outline-color: ${gray5};}`} />
+            </form>
             <Link
                 to="signin"
                 css={css` font-family: ${fontFamily}; font-size: ${fontSize}; padding: 5px 10px; background-color: transparent; color: ${gray2}; text-decoration: none; cursor: pointer; :focus { outline-color: ${gray5}; } span {margin-left: 7px;}`}>
                 <UserIcon />
-                <span>Sign In</span></Link>
+                <span>Sign In</span>
+            </Link>
         </div>
     );
 };
@@ -64,3 +77,7 @@ export const Header = () => {
 // without the parentheses.
 // Prettier automatically adds parentheses to an implicit return if they are needed,
 // so we don't need to worry about remembering this rule.
+
+// Important note
+// The ref property is a special property that React adds to elements that enables
+// the underlying DOM node to be accessed.
