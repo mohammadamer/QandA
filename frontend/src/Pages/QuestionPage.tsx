@@ -1,7 +1,7 @@
 import React from 'react';
 import { Page } from '../PageTitle/Page';
 import { useParams } from 'react-router-dom';
-import { QuestionData, getQuestion, postAnswer } from '../QuestionsData';
+import { getQuestion, postAnswer } from '../QuestionsData';
 
 /** @jsxImportSource @emotion/react */
 import { css } from '@emotion/react';
@@ -9,27 +9,33 @@ import { AnswerList } from '../Answers/AnswerList';
 import { gray3, gray6, Fieldset, FieldContainer, FieldLabel, FieldTextArea, FormButtonContainer, PrimaryButton, FieldError, SubmissionSuccess } from '../Styles';
 import { useForm } from 'react-hook-form';
 
+import { useSelector, useDispatch } from 'react-redux';
+import { AppState, gettingQuestionAction, gotQuestionAction } from '../Store';
 
 type FormData = {
     content: string;
 };
 
 export const QuestionPage = () => {
-    const [question, setQuestion] = React.useState<QuestionData | null>(null);
-    const [successfullySubmitted, setSuccessfullySubmitted] = React.useState(
-        false,
-    );
+    const dispatch = useDispatch();
+    const question = useSelector((state: AppState) => state.questions.viewing);
+
+    const [successfullySubmitted, setSuccessfullySubmitted] = React.useState(false);
 
     const { questionId } = useParams();
 
     React.useEffect(() => {
         const doGetQuestion = async (questionId: number) => {
+
+            dispatch(gettingQuestionAction());
             const foundQuestion = await getQuestion(questionId);
-            setQuestion(foundQuestion);
+            dispatch(gotQuestionAction(foundQuestion));
         };
+
         if (questionId) {
             doGetQuestion(Number(questionId));
         }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [questionId]);
 
     const { register, handleSubmit, formState } = useForm<FormData>({ mode: 'onBlur' });
