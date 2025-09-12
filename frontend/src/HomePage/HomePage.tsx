@@ -1,6 +1,6 @@
 import React from 'react';
 import { QuestionList } from '../Questions/QuestionList';
-import { getUnansweredQuestions, QuestionData } from '../QuestionsData';
+import { getUnansweredQuestions } from '../QuestionsData';
 import { Page } from '../PageTitle/Page';
 import { PageTitle } from '../PageTitle/PageTitle';
 
@@ -9,18 +9,38 @@ import { css } from '@emotion/react';
 import { PrimaryButton } from '../Styles';
 import { useNavigate } from 'react-router-dom';
 
+//connect the home page to the store.
+// We will eventually use the useSelector function to get state from the store. The
+// useDispatch function will be used to invoke actions.
+import { useSelector, useDispatch } from 'react-redux';
+import { gettingUnansweredQuestionsAction, gotUnansweredQuestionsAction, AppState } from '../Store';
+
 export const HomePage = () => {
-  const [questions, setQuestions] = React.useState<QuestionData[]>([]);
-  const [questionsLoading, setQuestionsLoading] = React.useState(true);
+
+  //The useDispatch hook from React Redux returns a function that we can use to dispatch actions.
+  const dispatch = useDispatch();
+  // The useSelector hook from React Redux returns state from the store if we pass it a function that selects the state.
+  // Use the useSelector hook to get the unanswered questions state from the store
+  const questions = useSelector((state: AppState) => state.questions.unanswered);
+  //Use the useSelector hook again to get the loading state from the store:
+  const questionsLoading = useSelector((state: AppState) => state.questions.loading);
 
   React.useEffect(() => {
     const doGetUnansweredQuestions = async () => {
+
+      //We dispatch the action to the store using the dispatch function.
+      dispatch(gettingUnansweredQuestionsAction());
       const unansweredQuestions = await getUnansweredQuestions();
-      setQuestions(unansweredQuestions);
-      setQuestionsLoading(false);
+
+      //We pass in the unanswered questions to the function that creates this action.
+      //We then dispatch the action using the dispatch function.
+      dispatch(gotUnansweredQuestionsAction(unansweredQuestions));
     };
+
     doGetUnansweredQuestions();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
   const navigate = useNavigate();
   const handleAskQuestionClick = () => {
     navigate('ask');
