@@ -1,3 +1,4 @@
+using backend.DataRepository;
 using DbUp;
 using System.Reflection;
 
@@ -9,6 +10,22 @@ builder.Services.AddControllers();
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
+
+//Important
+//Adding DataRepository in the ConfigureServices class to make the data repository available for dependency injection.
+//This tells ASP.NET that whenever IDataRepository is referenced in a constructor, substitute an instance of the DataRepository class.
+//So, if ASP.NET encounters a second constructor that references IDataRepository in the same HTTP request, it will use the instance of the DataRepository class it created previously.
+builder.Services.AddScoped<IDataRepository, DataRepository>();
+
+
+// Important note: 
+//The AddScoped method means that only one instance of the DataRepository class is created in a given HTTP request.
+//This means that the lifetime of the class that is created lasts for the whole HTTP request.
+
+// Important note
+// As well as AddScoped, there are other methods for registering
+// dependencies that result in different lifetimes for the generated class. AddTransient will generate a new instance of the class each time it
+// is requested. AddSingleton will generate only one class instance for the lifetime of the whole app.
 
 var app = builder.Build();
 
