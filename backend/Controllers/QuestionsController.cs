@@ -1,3 +1,4 @@
+using backend.Data;
 using backend.Data.Models;
 using backend.DataRepository;
 using Microsoft.AspNetCore.Mvc;
@@ -12,22 +13,30 @@ namespace backend.Controllers
         //We've used the readonly keyword to make sure the variable's reference doesn't change outside the constructor
         //private class-level variable
         private readonly IDataRepository _dataRepository;
+        private readonly IQuestionCache _cache;
 
-        public QuestionsController(IDataRepository dataRepository)
+        public QuestionsController(IDataRepository dataRepository, IQuestionCache questionCache)
         {
             _dataRepository = dataRepository;
+            _cache = questionCache;
         }
 
-        [HttpGet]
-        public IEnumerable<QuestionGetManyResponse> GetQuestions(string search)
+        public IEnumerable<QuestionGetManyResponse> GetQuestions(string search, bool includeAnswers, int page = 1, int pageSize = 20)
         {
             if (string.IsNullOrEmpty(search))
             {
-                return _dataRepository.GetQuestions();
+                if (includeAnswers)
+                {
+                    return _dataRepository.GetQuestionsWithAnswers();
+                }
+                else
+                {
+                    return _dataRepository.GetQuestions();
+                }
             }
             else
             {
-                return _dataRepository.GetQuestionsBySearch(search);
+                return _dataRepository.GetQuestionsBySearchWithPaging(search, page, pageSize);
             }
         }
 
@@ -35,21 +44,44 @@ namespace backend.Controllers
         // This is an additional path to concatenate to the controller's root path. 
         // So, this action method will handle GET requests to the api/questions/unanswered path.
         //To handle a subpath in an action method, we pass the subpath in the HttpGet attribute parameter.
+
+        //[HttpGet("unanswered")]
+        //public IEnumerable<QuestionGetManyResponse> GetUnansweredQuestions()
+        //{
+        //    return _dataRepository.GetUnansweredQuestions();
+        //}
+
         [HttpGet("unanswered")]
-        public IEnumerable<QuestionGetManyResponse> GetUnansweredQuestions()
+        public async Task<IEnumerable<QuestionGetManyResponse>> GetUnansweredQuestions()
         {
-            return _dataRepository.GetUnansweredQuestions();
+            return await _dataRepository.GetUnansweredQuestionsAsync();
         }
 
         //In this method, the questionId parameter will be set to the subpath on the endpoint. So, for the api/questions/3 path, questionId would be set to 3.
         //Endpoint subpath parameters can be implemented by putting the parameter name inside curly brackets inside the HTTP method attribute decorator
+        //[HttpGet("{questionId}")]
+        //public ActionResult<QuestionGetSingleResponse> GetQuestion(int questionId)
+        //{
+        //    var question = _dataRepository.GetQuestion(questionId);
+        //    if (question == null)
+        //    {
+        //        return NotFound();
+        //    }
+        //    return question;
+        //}
+
         [HttpGet("{questionId}")]
         public ActionResult<QuestionGetSingleResponse> GetQuestion(int questionId)
         {
-            var question = _dataRepository.GetQuestion(questionId);
+            var question = _cache.Get(questionId);
             if (question == null)
             {
-                return NotFound();
+                question = _dataRepository.GetQuestion(questionId);
+                if (question == null)
+                {
+                    return NotFound();
+                }
+                _cache.Set(question);
             }
             return question;
         }
@@ -87,6 +119,8 @@ namespace backend.Controllers
             questionPutRequest.Content = string.IsNullOrEmpty(questionPutRequest.Content) ? question.Content : questionPutRequest.Content;
 
             var savedQuestion = _dataRepository.PutQuestion(questionId, questionPutRequest);
+
+            _cache.Remove(savedQuestion.QuestionId);
             return savedQuestion;
         }
 
@@ -100,6 +134,8 @@ namespace backend.Controllers
                 return NotFound();
             }
             _dataRepository.DeleteQuestion(questionId);
+
+            _cache.Remove(questionId);
             return NoContent();
         }
 
@@ -110,6 +146,7 @@ namespace backend.Controllers
         // public ActionResult<AnswerGetResponse>
         // PostAnswer(int questionId, AnswerPostRequest
         // answerPostRequest)
+
         [HttpPost("answer")]
         public ActionResult<AnswerGetResponse> PostAnswer(AnswerPostRequest answerPostRequest)
         {
@@ -118,8 +155,7 @@ namespace backend.Controllers
             {
                 return NotFound();
             }
-            var savedAnswer = _dataRepository.PostAnswer(new
-                AnswerPostFullRequest
+            var savedAnswer = _dataRepository.PostAnswer(new AnswerPostFullRequest
             {
                 QuestionId = answerPostRequest.QuestionId.Value,
                 Content = answerPostRequest.Content,
@@ -127,9 +163,11 @@ namespace backend.Controllers
                 UserName = "bob.test@test.com",
                 Created = DateTime.UtcNow
             });
+
+            _cache.Remove(answerPostRequest.QuestionId.Value);
             return savedAnswer;
         }
-        
+
         // Important note
         // Dependency injection is the process of injecting an instance of a class into
         // another object. The goal of dependency injection is to decouple a class from

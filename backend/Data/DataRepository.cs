@@ -1,6 +1,8 @@
 using Microsoft.Data.SqlClient;
 using Dapper;
 using backend.Data.Models;
+using static System.Runtime.InteropServices.JavaScript.JSType;
+using static Dapper.SqlMapper;
 
 namespace backend.DataRepository
 {
@@ -21,19 +23,71 @@ namespace backend.DataRepository
             }
         }
 
+        //Multi-results:
+        //There is another feature in Dapper that helps us reduce the amount of database round trips called multi-results.
+        //how to execute multiple queries in a single round trip using the multi-results feature in Dapper
         public QuestionGetSingleResponse GetQuestion(int questionId)
         {
             using (var connection = new SqlConnection(_connectionString))
             {
                 connection.Open();
-                var question = connection.QueryFirstOrDefault<QuestionGetSingleResponse>(@"EXEC dbo.Question_GetSingle @QuestionId = @QuestionId", new { QuestionId = questionId });
-                if (question != null)
+                using (GridReader results = connection.QueryMultiple(
+                    @"EXEC dbo.Question_GetSingle @QuestionId = @QuestionId; EXEC dbo.Answer_Get_ByQuestionId @QuestionId = @QuestionId", new { QuestionId = questionId }))
                 {
-                    question.Answers = connection.Query<AnswerGetResponse>(@"EXEC dbo.Answer_Get_ByQuestionId @QuestionId = @QuestionId", new { QuestionId = questionId });
+                    var question = results.Read<QuestionGetSingleResponse>().FirstOrDefault();
+                    if (question != null)
+                    {
+                        question.Answers =
+                        results.Read<AnswerGetResponse>().ToList();
+                    }
+                    return question;
                 }
-                return question;
             }
         }
+
+        public IEnumerable<QuestionGetManyResponse> GetQuestionsBySearchWithPaging(string search, int pageNumber, int pageSize)
+        {
+            using (var connection = new SqlConnection(_connectionString))
+            {
+                connection.Open();
+                var parameters = new
+                {
+                    Search = search,
+                    PageNumber = pageNumber,
+                    PageSize = pageSize
+                };
+                return connection.Query<QuestionGetManyResponse>(@"EXEC dbo.Question_GetMany_BySearch_WithPaging @Search = @Search, @PageNumber = @PageNumber, @PageSize = @PageSize", parameters);
+            }
+        }
+
+        //Multi-mapping in Dapper:
+        //Get the questions and answers in a single database query and then map this data to the hierarchical structure that we require in our data repository
+        //how to fetch parent-child data in a single round trip using the multi-mapping feature in Dapper
+        public IEnumerable<QuestionGetManyResponse> GetQuestionsWithAnswers()
+        {
+            using (var connection = new SqlConnection(_connectionString))
+            {
+                connection.Open();
+                var questionDictionary = new Dictionary<int, QuestionGetManyResponse>();
+                return connection.Query<QuestionGetManyResponse, AnswerGetResponse, QuestionGetManyResponse>
+                   ("EXEC dbo.Question_GetMany_WithAnswers",
+                       map: (q, a) =>
+                       {
+                           QuestionGetManyResponse question;
+
+                           if (!questionDictionary.TryGetValue(q.QuestionId, out question))
+                           {
+                               question = q;
+                               question.Answers = new List<AnswerGetResponse>();
+                               questionDictionary.Add(question.QuestionId, question);
+                           }
+                           question.Answers.Add(a);
+                           return question;
+                       }, splitOn: "QuestionId"
+                   ).Distinct().ToList();
+            }
+        }
+
         public IEnumerable<QuestionGetManyResponse> GetQuestions()
         {
             using (var connection = new SqlConnection(_connectionString))
@@ -67,6 +121,16 @@ namespace backend.DataRepository
                 return connection.Query<QuestionGetManyResponse>("EXEC dbo.Question_GetUnanswered");
             }
         }
+
+        public async Task<IEnumerable<QuestionGetManyResponse>> GetUnansweredQuestionsAsync()
+        {
+            using (var connection = new SqlConnection(_connectionString))
+            {
+                await connection.OpenAsync();
+                return await connection.QueryAsync<QuestionGetManyResponse>("EXEC dbo.Question_GetUnanswered");
+            }
+        }
+
         public bool QuestionExists(int questionId)
         {
             using (var connection = new SqlConnection(_connectionString))
@@ -123,20 +187,32 @@ namespace backend.DataRepository
 }
 
 // Important Note
-// The readonly keyword prevents the variable from being changed outside of
-// the class constructor, which is what we want in this case.
+// The readonly keyword prevents the variable from being changed outside of the class constructor, which is what we want in this case.
 
 //Important Note
-//A using block automatically disposes of the object defined in the block
-//when the program exits the scope of the block. This includes whether
-//a return statement is invoked within the block, as well as errors occurring within the block.
+//A using block automatically disposes of the object defined in the block when the program exits the scope of the block.
+//This includes whether a return statement is invoked within the block, as well as errors occurring within the block.
 
 //Important Note
 //Note that the class doesn't need to contain properties for all of the fields that
-//are output from the stored procedure. Dapper will ignore fields that don't have
-//the corresponding properties in the class.
+//are output from the stored procedure. Dapper will ignore fields that don't have the corresponding properties in the class.
 
 //Important Note
-//Parameter values are passed into a Dapper query using an object where its
-//property names match the parameter names. Dapper will then create and
+//Parameter values are passed into a Dapper query using an object where its property names match the parameter names. Dapper will then create and
 //execute a parameterized query.
+
+//Important note
+//When making code asynchronous, all the I/O calls in the calling stack must
+//be asynchronous. If any I/O call is synchronous, then the thread will be
+//blocked rather than returning to the thread pool and so threads won't be managed efficiently.
+
+//The benefit of asynchronous code is that it uses the web server's resources more
+//efficiently under load.So, an asynchronous REST API will scale better than a synchronous REST API.
+
+//multi - mapping in Dapper:
+//Get the questions and answers in a single database query and then map this data to the hierarchical structure that we require in our data repository
+//how to fetch parent-child data in a single round trip using the multi-mapping feature in Dapper
+
+//Multi-results:
+//There is another feature in Dapper that helps us reduce the amount of database round trips called multi-results.
+//how to execute multiple queries in a single round trip using the multi-results feature in Dapper
