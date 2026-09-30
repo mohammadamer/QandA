@@ -1,3 +1,4 @@
+using backend.Data;
 using backend.DataRepository;
 using DbUp;
 using System.Reflection;
@@ -16,6 +17,8 @@ builder.Services.AddSwaggerGen();
 //This tells ASP.NET that whenever IDataRepository is referenced in a constructor, substitute an instance of the DataRepository class.
 //So, if ASP.NET encounters a second constructor that references IDataRepository in the same HTTP request, it will use the instance of the DataRepository class it created previously.
 builder.Services.AddScoped<IDataRepository, DataRepository>();
+builder.Services.AddMemoryCache();
+builder.Services.AddSingleton<IQuestionCache, QuestionCache>();
 
 
 // Important note: 
@@ -24,8 +27,9 @@ builder.Services.AddScoped<IDataRepository, DataRepository>();
 
 // Important note
 // As well as AddScoped, there are other methods for registering
-// dependencies that result in different lifetimes for the generated class. AddTransient will generate a new instance of the class each time it
-// is requested. AddSingleton will generate only one class instance for the lifetime of the whole app.
+// dependencies that result in different lifetimes for the generated class.
+// AddTransient will generate a new instance of the class each time it is requested.
+// AddSingleton will generate only one class instance for the lifetime of the whole app.
 
 var app = builder.Build();
 
